@@ -1,19 +1,18 @@
 // we require Linux
+#include "fastscancount.h"
+#include "fastscancount_avx2.h"
 #include "linux-perf-events.h"
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
+#include <immintrin.h>
 #include <iostream>
 #include <vector>
-#include <immintrin.h>
-#include "fastscancount_avx2.h"
-#include "fastscancount.h"
 
 #define REPEATS 10
-void
-scancount(std::vector<uint8_t> &counters,
-          std::vector<std::vector<uint32_t>> &data, std::vector<uint32_t> &out,
-          size_t threshold) {
+void scancount(std::vector<uint8_t> &counters,
+               std::vector<std::vector<uint32_t>> &data,
+               std::vector<uint32_t> &out, size_t threshold) {
   std::fill(counters.begin(), counters.end(), 0);
   out.clear();
   for (size_t c = 0; c < data.size(); c++) {
@@ -29,25 +28,22 @@ scancount(std::vector<uint8_t> &counters,
 }
 
 template <typename F>
-void bench(F f,
-          const std::string& name,
-          LinuxEvents<PERF_TYPE_HARDWARE>& unified,
-          std::vector<unsigned long long>& results,
-          std::vector<uint32_t>& answer,
-          size_t sum,
-          size_t expected,
-          bool print) {
-    unified.start();
-    f(answer);
-    unified.end(results);
-    if (answer.size() != expected) std::cerr << "bug: expected " << expected
-        << " but got " << answer.size() << "\n";
-    if (print) {
-      std::cout << name << std::endl;
-      std::cout << double(results[0]) / sum << " cycles/element " << std::endl;
-    }
+void bench(F f, const std::string &name,
+           LinuxEvents<PERF_TYPE_HARDWARE> &unified,
+           std::vector<unsigned long long> &results,
+           std::vector<uint32_t> &answer, size_t sum, size_t expected,
+           bool print) {
+  unified.start();
+  f(answer);
+  unified.end(results);
+  if (answer.size() != expected)
+    std::cerr << "bug: expected " << expected << " but got " << answer.size()
+              << "\n";
+  if (print) {
+    std::cout << name << std::endl;
+    std::cout << double(results[0]) / sum << " cycles/element " << std::endl;
+  }
 }
-
 
 void demo(size_t N, size_t length, size_t array_count, size_t threshold) {
   std::vector<std::vector<uint32_t>> data(array_count);
@@ -81,14 +77,19 @@ void demo(size_t N, size_t length, size_t array_count, size_t threshold) {
 
     bool last = (t == REPEATS - 1);
 
-    bench([&](std::vector<uint32_t>& ans) { fastscancount::fastscancount(data, answer, threshold); },
-        "optimized cache-sensitive scancount", unified, results, answer, sum, expected, last);
+    bench(
+        [&](std::vector<uint32_t> &ans) {
+          fastscancount::fastscancount(data, answer, threshold);
+        },
+        "optimized cache-sensitive scancount", unified, results, answer, sum,
+        expected, last);
 
-
-    bench([&](std::vector<uint32_t>& ans) { fastscancount::fastscancount_avx2(counters, data, answer, threshold); },
+    bench(
+        [&](std::vector<uint32_t> &ans) {
+          fastscancount::fastscancount_avx2(counters, data, answer, threshold);
+        },
         "AVX2-based scancount", unified, results, answer, sum, expected, last);
   }
-
 }
 int main() {
   demo(20000000, 50000, 100, 3);
