@@ -70,6 +70,9 @@ optimized cache-sensitive scancount
 AVX2-based scancount
 3.58494 cycles/element
 ```
+## Blog post
+
+[How fast can scancount be?](http://lemire.me/blog/2019/08/30/how-fast-can-scancount-be/ )
 
 ## Credit
 
