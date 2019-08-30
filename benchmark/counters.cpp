@@ -42,6 +42,8 @@ void bench(F f, const std::string &name,
   if (print) {
     std::cout << name << std::endl;
     std::cout << double(results[0]) / sum << " cycles/element " << std::endl;
+    std::cout << double(results[1]) / double(results[0]) << " instructions/cycles " << std::endl;
+    std::cout << double(results[2]) / sum << " miss/element " << std::endl;
   }
 }
 
