@@ -26,7 +26,9 @@ void scancount(std::vector<std::vector<uint32_t>> &data, std::vector<uint32_t> &
 }
 ```
 
-There are two header, `fastscancount.h` uses plain C++ and should
+Our optimized versions assume that your arrays are made of sorted integers.
+
+There are two headers, `fastscancount.h` uses plain C++ and should
 be portable. It has one main function in the fastscancount namespace.
 We always write the result to 'out'.
 
@@ -48,6 +50,26 @@ The AVX2 version assumes that you have fewer than 128 arrays of integers.
 
 Because this library is made solely of headers, there is no
 need for a build system.
+
+## Linux benchmark
+
+If you have bare metal access to a Linux box, you can run cycle-accurate benchmarks.
+
+```
+make
+./counter
+```
+
+Sample output:
+
+```
+$ ./counter
+Got 2497 hits
+optimized cache-sensitive scancount
+4.01381 cycles/element
+AVX2-based scancount
+3.58494 cycles/element
+```
 
 ## Credit
 

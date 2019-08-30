@@ -6,7 +6,8 @@
 #include <iostream>
 #include <vector>
 #include <immintrin.h>
-
+#include "fastscancount_avx2.h"
+#include "fastscancount.h"
 
 #define REPEATS 10
 void
@@ -80,7 +81,7 @@ void demo(size_t N, size_t length, size_t array_count, size_t threshold) {
 
     bool last = (t == REPEATS - 1);
 
-    bench([&](std::vector<uint32_t>& ans) { fastscancount::fastscancount(data, answer, threshold, tiny_cache_size); },
+    bench([&](std::vector<uint32_t>& ans) { fastscancount::fastscancount(data, answer, threshold); },
         "optimized cache-sensitive scancount", unified, results, answer, sum, expected, last);
 
 

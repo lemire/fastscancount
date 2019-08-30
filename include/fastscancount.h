@@ -72,8 +72,12 @@ void fastscancount(std::vector<std::vector<uint32_t>> &data,
   uint32_t *initout = out.data();
   std::vector<size_t> iters(ds);
   size_t countsofar = 0;
+  uint32_t largest = 0;
+  for (size_t c = 0; c < ds; c++) {
+    if(largest < data[c][data[c].size()-1]) largest = data[c][data[c].size()-1];
+  }
   // we are assuming that all vectors in data are non-empty
-  for (size_t start = 0; start < cs; start += range) {
+  for (size_t start = 0; start < largest; start += range) {
     // make sure that the capacity is sufficient
     countsofar = output - initout;
     if (out.size() - countsofar < range) {
