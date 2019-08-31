@@ -6,7 +6,6 @@
 #include <cstdint>
 #include <cstring>
 #include <vector>
-
 // credit: implementation and design by Nathan Kurz and Daniel Lemire
 
 namespace fastscancount {
@@ -15,15 +14,43 @@ namespace {
 
 // used by natefastscancount
 uint32_t *natefastscancount_maincheck(uint8_t *counters, size_t &it,
-                                      const uint32_t *d, size_t start,
-                                      size_t range, uint8_t threshold,
-                                      uint32_t *out) {
+                                      size_t itend, const uint32_t *d,
+                                      size_t start, size_t range,
+                                      uint8_t threshold, uint32_t *out) {
   range += start;
   counters -= start;
   size_t i = it;
+  while (i + 4 <= itend) {
+    uint32_t val1 = d[i];
+    uint32_t val2 = d[i + 1];
+    uint32_t val3 = d[i + 2];
+    uint32_t val4 = d[i + 3];
+    if (val4 < range) {
+      uint8_t c1 = counters[val1];
+      if (c1 == threshold)
+        *out++ = val1;
+      counters[val1] = c1 + 1;
+      uint8_t c2 = counters[val2];
+      if (c2 == threshold)
+        *out++ = val2;
+      counters[val2] = c2 + 1;
+      uint8_t c3 = counters[val3];
+      if (c3 == threshold)
+        *out++ = val3;
+      counters[val3] = c3 + 1;
+      uint8_t c4 = counters[val4];
+      if (c4 == threshold)
+        *out++ = val4;
+      counters[val4] = c4 + 1;
+
+      i += 4;
+    } else
+      break;
+  }
   for (uint32_t val = d[i]; val < range; val = d[++i]) {
     uint8_t c = counters[val];
-    if (c == threshold) *out++ = val;
+    if (c == threshold)
+      *out++ = val;
     counters[val] = c + 1;
   }
   it = i;
@@ -89,8 +116,9 @@ void fastscancount(std::vector<std::vector<uint32_t>> &data,
         output = natefastscancount_finalcheck(counters.data(), it, d.data(),
                                               start, itend, threshold, output);
       } else {
-        output = natefastscancount_maincheck(counters.data(), it, d.data(),
-                                             start, range, threshold, output);
+        output =
+            natefastscancount_maincheck(counters.data(), it, itend, d.data(),
+                                        start, range, threshold, output);
       }
       iters[c] = it; // store it for next round
     }
