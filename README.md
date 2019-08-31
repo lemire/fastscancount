@@ -60,7 +60,7 @@ make
 ./counter
 ```
 
-Sample output:
+Sample output with GNU GCC 8.3:
 
 ```
 $ ./counter
@@ -70,6 +70,22 @@ optimized cache-sensitive scancount
 AVX2-based scancount
 3.58494 cycles/element
 ```
+
+With LLVM clang, we seem to get better results:
+
+```
+$ ./counter
+Got 2497 hits
+optimized cache-sensitive scancount
+3.54267 cycles/element
+2.8908 instructions/cycles
+0.0134279 miss/element
+AVX2-based scancount
+3.57374 cycles/element
+2.03391 instructions/cycles
+0.0109755 miss/element
+```
+
 ## Blog post
 
 [How fast can scancount be?](http://lemire.me/blog/2019/08/30/how-fast-can-scancount-be/ )

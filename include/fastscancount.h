@@ -18,21 +18,13 @@ uint32_t *natefastscancount_maincheck(uint8_t *counters, size_t &it,
                                       const uint32_t *d, size_t start,
                                       size_t range, uint8_t threshold,
                                       uint32_t *out) {
-  uint8_t t = threshold + 1;
-  uint32_t bigend = start + range;
-  uint8_t *const deccounters = counters - start;
+  range += start;
+  counters -= start;
   size_t i = it;
-  uint32_t val = d[i];
-  while (val < bigend) {
-    uint8_t *location = deccounters + val;
-    uint8_t c = *location;
-    c++;
-    *location = c;
-    if (c == t) {
-      *out++ = val;
-    }
-    i++;
-    val = d[i];
+  for (uint32_t val = d[i]; val < range; val = d[++i]) {
+    uint8_t c = counters[val];
+    if (c == threshold) *out++ = val;
+    counters[val] = c + 1;
   }
   it = i;
   return out;
