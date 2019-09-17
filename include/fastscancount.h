@@ -51,9 +51,9 @@ uint32_t *natefastscancount_finalcheck(uint8_t *counters, size_t &it,
 }
 } // namespace
 
-void fastscancount(std::vector<std::vector<uint32_t>> &data,
+void fastscancount(const std::vector<const std::vector<uint32_t>*> &data,
                    std::vector<uint32_t> &out, uint8_t threshold) {
-  size_t cache_size = 32768;
+  size_t cache_size = 65536;
   size_t range = cache_size;
   std::vector<uint8_t> counters(cache_size);
   size_t ds = data.size();
@@ -64,8 +64,8 @@ void fastscancount(std::vector<std::vector<uint32_t>> &data,
   size_t countsofar = 0;
   uint32_t largest = 0;
   for (size_t c = 0; c < ds; c++) {
-    if (largest < data[c][data[c].size() - 1])
-      largest = data[c][data[c].size() - 1];
+    if (largest < (*data[c])[data[c]->size() - 1])
+      largest = (*data[c])[data[c]->size() - 1];
   }
   // we are assuming that all vectors in data are non-empty
   for (size_t start = 0; start < largest; start += range) {
@@ -79,7 +79,7 @@ void fastscancount(std::vector<std::vector<uint32_t>> &data,
     memset(counters.data(), 0, range);
     for (size_t c = 0; c < ds; c++) {
       size_t it = iters[c]; // recover where we were
-      std::vector<uint32_t> &d = data[c];
+      const std::vector<uint32_t> &d = *data[c];
       const size_t itend = d.size();
       if (it == itend) // check that there is data to be processed
         continue;      // exhausted

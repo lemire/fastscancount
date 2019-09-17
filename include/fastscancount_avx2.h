@@ -79,7 +79,7 @@ void update_counters_final(const uint32_t *&it_, const uint32_t *end,
 } // namespace
 
 void fastscancount_avx2(std::vector<uint8_t> &counters,
-                        std::vector<std::vector<uint32_t>> &data,
+                        const std::vector<const std::vector<uint32_t>*> &data,
                         std::vector<uint32_t> &out, uint8_t threshold) {
   const size_t cache_size = 40000;
   out.clear();
@@ -96,7 +96,7 @@ void fastscancount_avx2(std::vector<uint8_t> &counters,
   std::vector<data_info> iter_data;
   iter_data.reserve(dsize);
   for (auto &d : data) {
-    iter_data.emplace_back(d.data(), d.data() + d.size(), d.back());
+    iter_data.emplace_back(d->data(), d->data() + d->size(), d->back());
   }
 
   uint32_t csize = counters.size();
