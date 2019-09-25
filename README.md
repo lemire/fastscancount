@@ -90,6 +90,12 @@ AVX2-based scancount
 
 [How fast can scancount be?](http://lemire.me/blog/2019/08/30/how-fast-can-scancount-be/ )
 
+## Using actual data
+
+```
+./counter --postings data/postings.bin --queries data/queries.bin --threshold 3
+```
+
 ## Credit
 
 The AVX2 version was designed and implemented by Travis Downs.
