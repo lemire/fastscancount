@@ -18,8 +18,8 @@
 namespace fastscancount {
 namespace {
 // credit: implementation and design by Travis Downes
-static inline size_t find_next_gt(uint8_t *array, size_t size,
-                                  uint8_t threshold) {
+static inline size_t find_next_gt(uint8_t *array, const size_t size,
+                                  const uint8_t threshold) {
   size_t vsize = size / 32;
   __m256i *varray = (__m256i *)array;
   const __m256i comprand = _mm256_set1_epi8(threshold);
@@ -47,6 +47,7 @@ void populate_hits_avx(std::vector<uint8_t> &counters, size_t range,
                        size_t threshold, size_t start,
                        std::vector<uint32_t> &out) {
   uint8_t *array = counters.data();
+
   size_t ro = range;
   while (true) {
     size_t next = find_next_gt(array, range, (uint8_t)threshold);
@@ -55,6 +56,7 @@ void populate_hits_avx(std::vector<uint8_t> &counters, size_t range,
     out.push_back(start + next);
     range -= (next + 1);
     array += (next + 1);
+    start += (next + 1);
   }
 }
 

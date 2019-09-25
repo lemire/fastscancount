@@ -93,8 +93,28 @@ void demo_data(const std::vector<std::vector<uint32_t>>& data,
 
     scancount(counters, dataPtrs, answer, threshold);
     const size_t expected = answer.size();
-    std::cout << "Qid: " << qid << " got " << expected << " hits\n";
+#define RUNNINGTESTS
+#ifdef RUNNINGTESTS
+    fastscancount::fastscancount(dataPtrs, answer, threshold);
+    size_t s1 = answer.size();
+    auto a1 (answer);
+    std::sort(a1.begin(), a1.end());
+    fastscancount::fastscancount_avx2(counters, dataPtrs, answer, threshold);
+    size_t s2 = answer.size();
+    auto a2 (answer);
+    std::sort(a2.begin(), a2.end());
+    if (a1 != a2) {
+      std::cout << "s1: " << s1 << " s2: " << s2 << std::endl;
+      for(size_t j = 0; j < s1; j++) {
+        std::cout << j << " " << a1[j] << " vs " << a2[j] ;
 
+        if(a1[j] != a2[j]) std::cout << " oh oh ";
+        std::cout << std::endl;
+      }
+      throw new std::runtime_error("bug");
+    }
+#endif 
+    std::cout << "Qid: " << qid << " got " << expected << " hits\n";
     bool last = (qid == queries.size() - 1);
 
     bench(
