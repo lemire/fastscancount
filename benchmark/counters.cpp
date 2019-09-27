@@ -192,7 +192,7 @@ void usage(const std::string& err="") {
 int main(int argc, char *argv[]) {
   // A very naive way to process arguments, 
   // but it's ok unless we need to extend it substantially.
-  if (argc != 0) {
+  if (argc != 1) {
     if (argc != 7) {
       usage("");
       return EXIT_FAILURE; 

@@ -57,7 +57,7 @@ void fastscancount(const std::vector<const std::vector<uint32_t>*> &data,
   size_t range = cache_size;
   std::vector<uint8_t> counters(cache_size);
   size_t ds = data.size();
-  out.resize(out.size() + 4 * range); // let us add lots of capacity
+  out.resize( 4 * range); // let us add lots of capacity
   uint32_t *output = out.data();
   uint32_t *initout = out.data();
   std::vector<size_t> iters(ds);
