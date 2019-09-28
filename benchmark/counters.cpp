@@ -99,7 +99,7 @@ void demo_data(const std::vector<std::vector<uint32_t>>& data,
     size_t s1 = answer.size();
     auto a1 (answer);
     std::sort(a1.begin(), a1.end());
-    fastscancount::fastscancount_avx2(counters, dataPtrs, answer, threshold);
+    fastscancount::fastscancount_avx2(dataPtrs, answer, threshold);
     size_t s2 = answer.size();
     auto a2 (answer);
     std::sort(a2.begin(), a2.end());
@@ -127,7 +127,7 @@ void demo_data(const std::vector<std::vector<uint32_t>>& data,
 #ifdef __AVX2__
     bench(
         [&](std::vector<uint32_t> &ans) {
-          fastscancount::fastscancount_avx2(counters, dataPtrs, answer, threshold);
+          fastscancount::fastscancount_avx2(dataPtrs, answer, threshold);
         },
         "AVX2-based scancount", unified, answer, sum, expected, last);
 #endif
@@ -175,7 +175,7 @@ void demo_random(size_t N, size_t length, size_t array_count, size_t threshold) 
 #ifdef __AVX2__
     bench(
         [&](std::vector<uint32_t> &ans) {
-          fastscancount::fastscancount_avx2(counters, dataPtrs, answer, threshold);
+          fastscancount::fastscancount_avx2(dataPtrs, answer, threshold);
         },
         "AVX2-based scancount", unified, answer, sum, expected, last);
 #endif

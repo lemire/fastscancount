@@ -80,10 +80,10 @@ void update_counters_final(const uint32_t *&it_, const uint32_t *end,
 }
 } // namespace
 
-void fastscancount_avx2(std::vector<uint8_t> &counters,
-                        const std::vector<const std::vector<uint32_t>*> &data,
+void fastscancount_avx2(const std::vector<const std::vector<uint32_t>*> &data,
                         std::vector<uint32_t> &out, uint8_t threshold) {
   const size_t cache_size = 40000;
+  std::vector<uint8_t> counters(cache_size);
   out.clear();
   const size_t dsize = data.size();
 
@@ -101,9 +101,13 @@ void fastscancount_avx2(std::vector<uint8_t> &counters,
     iter_data.emplace_back(d->data(), d->data() + d->size(), d->back());
   }
 
-  uint32_t csize = counters.size();
+  uint32_t largest = 0;
+  for (size_t c = 0; c < data.size(); c++) {
+    if (largest < (*data[c])[data[c]->size() - 1])
+      largest = (*data[c])[data[c]->size() - 1];
+  }
   auto cdata = counters.data();
-  for (uint32_t start = 0; start < csize; start += cache_size) {
+  for (uint32_t start = 0; start < largest; start += cache_size) {
     memset(cdata, 0, cache_size * sizeof(counters[0]));
     for (auto &id : iter_data) {
       // determine if the loop will end because we get to the end of
