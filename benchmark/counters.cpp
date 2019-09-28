@@ -13,10 +13,14 @@
 #include <vector>
 
 #define REPEATS 10
-void scancount(std::vector<uint8_t> &counters,
-               std::vector<const std::vector<uint32_t>*> &data,
+void scancount(std::vector<const std::vector<uint32_t>*> &data,
                std::vector<uint32_t> &out, size_t threshold) {
-  std::fill(counters.begin(), counters.end(), 0);
+  uint64_t largest = 0;
+  for(auto z : data) {
+    const std::vector<uint32_t> & v = *z;
+    if(v[v.size() - 1] > largest) largest = v[v.size() - 1];
+  }
+  std::vector<uint8_t> counters(largest);
   out.clear();
   for (size_t c = 0; c < data.size(); c++) {
     const std::vector<uint32_t> &v = *data[c];
@@ -63,7 +67,6 @@ void demo_data(const std::vector<std::vector<uint32_t>>& data,
     }
   }
 
-  std::vector<uint8_t> counters(N);
   std::vector<uint32_t> answer;
   answer.reserve(N);
 
@@ -91,7 +94,7 @@ void demo_data(const std::vector<std::vector<uint32_t>>& data,
       dataPtrs.push_back(&data[idx]);
     }
 
-    scancount(counters, dataPtrs, answer, threshold);
+    scancount(dataPtrs, answer, threshold);
     const size_t expected = answer.size();
 #define RUNNINGTESTS
 #ifdef RUNNINGTESTS
@@ -137,7 +140,6 @@ void demo_data(const std::vector<std::vector<uint32_t>>& data,
 void demo_random(size_t N, size_t length, size_t array_count, size_t threshold) {
   std::vector<std::vector<uint32_t>> data(array_count);
   std::vector<const std::vector<uint32_t>*> dataPtrs;
-  std::vector<uint8_t> counters(N);
   std::vector<uint32_t> answer;
   answer.reserve(N);
 
@@ -158,7 +160,7 @@ void demo_random(size_t N, size_t length, size_t array_count, size_t threshold) 
                            PERF_COUNT_HW_CACHE_REFERENCES,
                            PERF_COUNT_HW_CACHE_MISSES};
   LinuxEventsWrapper unified(evts);
-  scancount(counters, dataPtrs, answer, threshold);
+  scancount(dataPtrs, answer, threshold);
   const size_t expected = answer.size();
   std::cout << "Got " << expected << " hits\n";
   for (size_t t = 0; t < REPEATS; t++) {
