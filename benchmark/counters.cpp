@@ -13,8 +13,6 @@
 #include <iostream>
 #include <vector>
 
-#define RUNNINGTESTS
-
 #define REPEATS 10
 void scancount(std::vector<const std::vector<uint32_t>*> &data,
                std::vector<uint32_t> &out, size_t threshold) {
@@ -113,6 +111,7 @@ void demo_data(const std::vector<std::vector<uint32_t>>& data,
 
     scancount(dataPtrs, answer, threshold);
     const size_t expected = answer.size();
+#ifdef __AVX2__
 #define RUNNINGTESTS
 #ifdef RUNNINGTESTS
     fastscancount::fastscancount(dataPtrs, answer, threshold);
@@ -134,6 +133,7 @@ void demo_data(const std::vector<std::vector<uint32_t>>& data,
       throw new std::runtime_error("bug");
     }
 #endif 
+#endif
     std::cout << "Qid: " << qid << " got " << expected << " hits\n";
 
     bool last = (qid == queries.size() - 1);
