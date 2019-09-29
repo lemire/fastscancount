@@ -6,6 +6,9 @@
 #include "linux-perf-events.h"
 #endif
 
+#ifdef __linux__
+typedef LinuxEvents<PERF_TYPE_HARDWARE> EventClass;
+#endif
 
 class LinuxEventsWrapper {
   public:
