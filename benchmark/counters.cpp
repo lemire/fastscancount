@@ -13,11 +13,17 @@
 #include <iostream>
 #include <vector>
 
+#define RUNNINGTESTS
+
 #define REPEATS 10
-void scancount(std::vector<uint8_t> &counters,
-               std::vector<const std::vector<uint32_t>*> &data,
+void scancount(std::vector<const std::vector<uint32_t>*> &data,
                std::vector<uint32_t> &out, size_t threshold) {
-  std::fill(counters.begin(), counters.end(), 0);
+  uint64_t largest = 0;
+  for(auto z : data) {
+    const std::vector<uint32_t> & v = *z;
+    if(v[v.size() - 1] > largest) largest = v[v.size() - 1];
+  }
+  std::vector<uint8_t> counters(largest);
   out.clear();
   for (size_t c = 0; c < data.size(); c++) {
     const std::vector<uint32_t> &v = *data[c];
@@ -69,7 +75,6 @@ void demo_data(const std::vector<std::vector<uint32_t>>& data,
     }
   }
 
-  std::vector<uint8_t> counters(N);
   std::vector<uint32_t> answer;
   answer.reserve(N);
 
@@ -106,15 +111,36 @@ void demo_data(const std::vector<std::vector<uint32_t>>& data,
     }
     sum_total += sum;
 
-    scancount(counters, dataPtrs, answer, threshold);
+    scancount(dataPtrs, answer, threshold);
     const size_t expected = answer.size();
+#define RUNNINGTESTS
+#ifdef RUNNINGTESTS
+    fastscancount::fastscancount(dataPtrs, answer, threshold);
+    size_t s1 = answer.size();
+    auto a1 (answer);
+    std::sort(a1.begin(), a1.end());
+    fastscancount::fastscancount_avx2(dataPtrs, answer, threshold);
+    size_t s2 = answer.size();
+    auto a2 (answer);
+    std::sort(a2.begin(), a2.end());
+    if (a1 != a2) {
+      std::cout << "s1: " << s1 << " s2: " << s2 << std::endl;
+      for(size_t j = 0; j < s1; j++) {
+        std::cout << j << " " << a1[j] << " vs " << a2[j] ;
+
+        if(a1[j] != a2[j]) std::cout << " oh oh ";
+        std::cout << std::endl;
+      }
+      throw new std::runtime_error("bug");
+    }
+#endif 
     std::cout << "Qid: " << qid << " got " << expected << " hits\n";
 
     bool last = (qid == queries.size() - 1);
 
     bench(
         [&]() {
-          scancount(counters, dataPtrs, answer, threshold);
+          scancount(dataPtrs, answer, threshold);
         },
         "optimized cache-sensitive scancount", unified, elapsed, answer, sum,
         expected, last);
@@ -145,7 +171,6 @@ void demo_data(const std::vector<std::vector<uint32_t>>& data,
 void demo_random(size_t N, size_t length, size_t array_count, size_t threshold) {
   std::vector<std::vector<uint32_t>> data(array_count);
   std::vector<const std::vector<uint32_t>*> dataPtrs;
-  std::vector<uint8_t> counters(N);
   std::vector<uint32_t> answer;
   answer.reserve(N);
 
@@ -171,7 +196,7 @@ void demo_random(size_t N, size_t length, size_t array_count, size_t threshold) 
                           };
   LinuxEventsWrapper unified(evts);
   float elapsed = 0, elapsed_fast = 0, elapsed_avx = 0;
-  scancount(counters, dataPtrs, answer, threshold);
+  scancount(dataPtrs, answer, threshold);
   const size_t expected = answer.size();
   std::cout << "Got " << expected << " hits\n";
   size_t sum_total = 0;
@@ -183,7 +208,7 @@ void demo_random(size_t N, size_t length, size_t array_count, size_t threshold) 
 
     bench(
         [&]() {
-          scancount(counters, dataPtrs, answer, threshold);
+          scancount(dataPtrs, answer, threshold);
         },
         "baseline scancount", unified, elapsed, answer, sum,
         expected, last);
