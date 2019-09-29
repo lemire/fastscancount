@@ -1,5 +1,6 @@
-// we require Linux
+// Fine-grained statistics is available only on Linux
 #include "fastscancount.h"
+#include "ztimer.h"
 #ifdef __AVX2__
 #include "fastscancount_avx2.h"
 #endif
@@ -37,14 +38,18 @@ void scancount(std::vector<const std::vector<uint32_t>*> &data,
 template <typename F>
 void bench(F f, const std::string &name,
            LinuxEventsWrapper &unified,
+           float& elapsed,
            std::vector<uint32_t> &answer, size_t sum, size_t expected,
            bool print) {
+  WallClockTimer tm;
   unified.start();
-  f(answer);
+  f();
   unified.end();
+  elapsed += tm.split();
   if (answer.size() != expected)
     std::cerr << "bug: expected " << expected << " but got " << answer.size()
               << "\n";
+#ifdef __linux__
   if (print) {
     double cycles = unified.get_result(PERF_COUNT_HW_CPU_CYCLES);
     double instructions = unified.get_result(PERF_COUNT_HW_INSTRUCTIONS);
@@ -54,6 +59,7 @@ void bench(F f, const std::string &name,
     std::cout << instructions / cycles << " instructions/cycles " << std::endl;
     std::cout << misses / sum << " miss/element " << std::endl;
   }
+#endif
 }
 
 void demo_data(const std::vector<std::vector<uint32_t>>& data,
@@ -70,14 +76,22 @@ void demo_data(const std::vector<std::vector<uint32_t>>& data,
   std::vector<uint32_t> answer;
   answer.reserve(N);
 
-  std::vector<int> evts = {PERF_COUNT_HW_CPU_CYCLES,
+  std::vector<int> evts = {
+#ifdef __linux__
+                           PERF_COUNT_HW_CPU_CYCLES,
                            PERF_COUNT_HW_INSTRUCTIONS,
                            PERF_COUNT_HW_BRANCH_MISSES,
                            PERF_COUNT_HW_CACHE_REFERENCES,
-                           PERF_COUNT_HW_CACHE_MISSES};
+                           PERF_COUNT_HW_CACHE_MISSES
+#endif
+                          };
   LinuxEventsWrapper unified(evts);
 
   std::vector<const std::vector<uint32_t>*> dataPtrs;
+
+  float elapsed = 0, elapsed_fast = 0, elapsed_avx = 0;
+
+  size_t sum_total = 0;
 
   for (size_t qid = 0; qid < queries.size(); ++qid) {
     const auto& query_elem = queries[qid];
@@ -93,9 +107,11 @@ void demo_data(const std::vector<std::vector<uint32_t>>& data,
       sum += data[idx].size();
       dataPtrs.push_back(&data[idx]);
     }
+    sum_total += sum;
 
     scancount(dataPtrs, answer, threshold);
     const size_t expected = answer.size();
+#ifdef __AVX2__
 #define RUNNINGTESTS
 #ifdef RUNNINGTESTS
     fastscancount::fastscancount(dataPtrs, answer, threshold);
@@ -117,24 +133,39 @@ void demo_data(const std::vector<std::vector<uint32_t>>& data,
       throw new std::runtime_error("bug");
     }
 #endif 
+#endif
     std::cout << "Qid: " << qid << " got " << expected << " hits\n";
+
     bool last = (qid == queries.size() - 1);
 
     bench(
-        [&](std::vector<uint32_t> &ans) {
+        [&]() {
+          scancount(dataPtrs, answer, threshold);
+        },
+        "optimized cache-sensitive scancount", unified, elapsed, answer, sum,
+        expected, last);
+
+    bench(
+        [&]() {
           fastscancount::fastscancount(dataPtrs, answer, threshold);
         },
-        "optimized cache-sensitive scancount", unified, answer, sum,
+        "optimized cache-sensitive scancount", unified, elapsed_fast, answer, sum,
         expected, last);
   
 #ifdef __AVX2__
     bench(
-        [&](std::vector<uint32_t> &ans) {
+        [&]() {
           fastscancount::fastscancount_avx2(dataPtrs, answer, threshold);
         },
-        "AVX2-based scancount", unified, answer, sum, expected, last);
+        "AVX2-based scancount", unified, elapsed_avx, answer, sum, expected, last);
 #endif
   }
+  std::cout << "Elems per millisecond:" << std::endl;
+  std::cout << "scancount: " << (sum_total/(elapsed/1e3)) << std::endl; 
+  std::cout << "fastscancount: " << (sum_total/(elapsed_fast/1e3)) << std::endl; 
+#ifdef __AVX2__
+  std::cout << "fastscancount_avx2: " << (sum_total/(elapsed_avx/1e3)) << std::endl; 
+#endif
 }
 
 void demo_random(size_t N, size_t length, size_t array_count, size_t threshold) {
@@ -154,39 +185,60 @@ void demo_random(size_t N, size_t length, size_t array_count, size_t threshold) 
     sum += v.size();
     dataPtrs.push_back(&data[c]);
   }
-  std::vector<int> evts = {PERF_COUNT_HW_CPU_CYCLES,
+  std::vector<int> evts = {
+#ifdef __linux__
+                           PERF_COUNT_HW_CPU_CYCLES,
                            PERF_COUNT_HW_INSTRUCTIONS,
                            PERF_COUNT_HW_BRANCH_MISSES,
                            PERF_COUNT_HW_CACHE_REFERENCES,
-                           PERF_COUNT_HW_CACHE_MISSES};
+                           PERF_COUNT_HW_CACHE_MISSES
+#endif
+                          };
   LinuxEventsWrapper unified(evts);
+  float elapsed = 0, elapsed_fast = 0, elapsed_avx = 0;
   scancount(dataPtrs, answer, threshold);
   const size_t expected = answer.size();
   std::cout << "Got " << expected << " hits\n";
+  size_t sum_total = 0;
   for (size_t t = 0; t < REPEATS; t++) {
+
+    sum_total += sum;
 
     bool last = (t == REPEATS - 1);
 
     bench(
-        [&](std::vector<uint32_t> &ans) {
+        [&]() {
+          scancount(dataPtrs, answer, threshold);
+        },
+        "baseline scancount", unified, elapsed, answer, sum,
+        expected, last);
+
+    bench(
+        [&]() {
           fastscancount::fastscancount(dataPtrs, answer, threshold);
         },
-        "optimized cache-sensitive scancount", unified, answer, sum,
+        "optimized cache-sensitive scancount", unified, elapsed_fast, answer, sum,
         expected, last);
 
 #ifdef __AVX2__
     bench(
-        [&](std::vector<uint32_t> &ans) {
+        [&]() {
           fastscancount::fastscancount_avx2(dataPtrs, answer, threshold);
         },
-        "AVX2-based scancount", unified, answer, sum, expected, last);
+        "AVX2-based scancount", unified, elapsed_avx, answer, sum, expected, last);
 #endif
   }
+  std::cout << "Elems per millisecond:" << std::endl;
+  std::cout << "scancount: " << (sum_total/(elapsed/1e3)) << std::endl; 
+  std::cout << "fastscancount: " << (sum_total/(elapsed_fast/1e3)) << std::endl; 
+#ifdef __AVX2__
+  std::cout << "fastscancount_avx2: " << (sum_total/(elapsed_avx/1e3)) << std::endl; 
+#endif
 }
 
 void usage(const std::string& err="") {
   if (!err.empty()) {
-    std::cerr << "Specify both the queries and the postings!" << std::endl;
+    std::cerr << err << std::endl;
   }
   std::cerr << "usage: --postings <postings file> --queries <queries file> --threshold <threshold>" << std::endl;
 }
