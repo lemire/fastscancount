@@ -213,7 +213,7 @@ void demo_random(size_t N, size_t length, size_t array_count, size_t threshold) 
 
 void usage(const std::string& err="") {
   if (!err.empty()) {
-    std::cerr << "Specify both the queries and the postings!" << std::endl;
+    std::cerr << err << std::endl;
   }
   std::cerr << "usage: --postings <postings file> --queries <queries file> --threshold <threshold>" << std::endl;
 }
