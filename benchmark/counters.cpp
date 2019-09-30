@@ -142,7 +142,7 @@ void demo_data(const std::vector<std::vector<uint32_t>>& data,
         [&]() {
           scancount(dataPtrs, answer, threshold);
         },
-        "optimized cache-sensitive scancount", unified, elapsed, answer, sum,
+        "baseline scancount", unified, elapsed, answer, sum,
         expected, last);
 
     bench(
