@@ -53,7 +53,7 @@ uint32_t *natefastscancount_finalcheck(uint8_t *counters, size_t &it,
 
 void fastscancount(const std::vector<const std::vector<uint32_t>*> &data,
                    std::vector<uint32_t> &out, uint8_t threshold) {
-  size_t cache_size = 32768;
+  size_t cache_size = 65536;
   size_t range = cache_size;
   std::vector<uint8_t> counters(cache_size);
   size_t ds = data.size();
