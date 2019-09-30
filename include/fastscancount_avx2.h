@@ -17,6 +17,9 @@
 
 namespace fastscancount {
 namespace {
+
+//#define TRAVIS_AVX2
+#ifdef TRAVIS_AVX2
 // credit: implementation and design by Travis Downes
 static inline size_t find_next_gt(uint8_t *array, const size_t size,
                                   const uint8_t threshold) {
@@ -42,7 +45,6 @@ static inline size_t find_next_gt(uint8_t *array, const size_t size,
 
   return SIZE_MAX;
 }
-
 void populate_hits_avx(std::vector<uint8_t> &counters, size_t range,
                        size_t threshold, size_t start,
                        std::vector<uint32_t> &out) {
@@ -59,6 +61,43 @@ void populate_hits_avx(std::vector<uint8_t> &counters, size_t range,
     start += (next + 1);
   }
 }
+#else
+void populate_hits_avx(std::vector<uint8_t> &counters, size_t range,
+                       size_t threshold, size_t start,
+                       std::vector<uint32_t> &out) {
+  uint8_t *array = counters.data();
+
+  size_t vsize = range / 32;
+  __m256i *varray = (__m256i *)array;
+  const __m256i comprand = _mm256_set1_epi8(threshold);
+
+  // bits have 64 digits so that they can be shifted by 32 position!
+  // shifting a 32-bit unsigned by 32 bits is not defined.
+  uint64_t bits = 0;
+
+  for (size_t i = 0; i < vsize; i++) {
+    size_t start_add = start + i*32;
+    __m256i v = _mm256_loadu_si256(varray + i);
+    __m256i cmp = _mm256_cmpgt_epi8(v, comprand);
+    // (uint32_t) prevents digit sign extension when converting to 64-bit unsigned
+    bits = (uint32_t)_mm256_movemask_epi8(cmp);
+    while (bits) {
+      unsigned iadd =  __builtin_ctz(bits) + 1;
+      start_add += iadd;
+      out.push_back(start_add - 1);
+      bits >>= iadd;
+    }
+  }
+
+  // tail handling
+  for (size_t i = vsize * 32; i < range; i++) {
+    auto v = array[i];
+    if (v > threshold)
+      out.push_back(start + i);
+  }
+
+}
+#endif
 
 void update_counters(const uint32_t *&it_, uint8_t *counters,
                      uint32_t range_end) {
@@ -82,7 +121,7 @@ void update_counters_final(const uint32_t *&it_, const uint32_t *end,
 
 void fastscancount_avx2(const std::vector<const std::vector<uint32_t>*> &data,
                         std::vector<uint32_t> &out, uint8_t threshold) {
-  const size_t cache_size = 40000;
+  const size_t cache_size = 32768;
   std::vector<uint8_t> counters(cache_size);
   out.clear();
   const size_t dsize = data.size();
