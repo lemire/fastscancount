@@ -21,7 +21,7 @@ void scancount(std::vector<const std::vector<uint32_t>*> &data,
     const std::vector<uint32_t> & v = *z;
     if(v[v.size() - 1] > largest) largest = v[v.size() - 1];
   }
-  std::vector<uint8_t> counters(largest);
+  std::vector<uint8_t> counters(largest+1);
   out.clear();
   for (size_t c = 0; c < data.size(); c++) {
     const std::vector<uint32_t> &v = *data[c];
