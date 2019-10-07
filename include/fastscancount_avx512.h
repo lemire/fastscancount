@@ -68,7 +68,7 @@ void update_counters_avx512(const uint32_t  *&it_, const uint32_t  *end,
 
   for (unsigned i = 0; i < vsize; ++i) {
     __m512i indx = _mm512_sub_epi32(_mm512_loadu_si512(varray + i), shift_vect);
-    __m512i v_orig = _mm512_i32gather_epi32(indx, counters, 1);
+    __m512i v_orig = _mm512_i32gather_epi32(indx, (const int*)counters, 1);
     // Note: works correctly only if counters never overflow
     // First, we increment counters.
     __m512i v_inc = _mm512_add_epi32(v_orig, add1);
@@ -76,7 +76,7 @@ void update_counters_avx512(const uint32_t  *&it_, const uint32_t  *end,
     // When 32-bit words overlap, the gather operation would first write the old values of the word
     // then it will overwrite them with new values. So, this should work just fine.
     __m512i v = _mm512_mask_blend_epi8(blend_mask, v_orig, v_inc);
-    _mm512_i32scatter_epi32(counters, indx, v, 1);
+    _mm512_i32scatter_epi32((int*)counters, indx, v, 1);
   }
 
   // tail processing

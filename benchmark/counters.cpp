@@ -222,19 +222,19 @@ void demo_data(const std::vector<std::vector<uint32_t>>& data,
         },
         "optimized cache-sensitive scancount", unified, elapsed_fast, answer, sum,
         expected, last);
-#ifdef __AVX512F__
-    bench(
-        [&]() {
-          fastscancount::fastscancount_avx512(range_size_avx512, data_ptrs, range_ptrs, answer, threshold);
-        },
-        "AVX512-based scancount", unified, elapsed_avx512, answer, sum, expected, last);
-#endif
 #ifdef __AVX2__
     bench(
         [&]() {
           fastscancount::fastscancount_avx2(data_ptrs, answer, threshold);
         },
         "AVX2-based scancount", unified, elapsed_avx, answer, sum, expected, last);
+#endif
+#ifdef __AVX512F__
+    bench(
+        [&]() {
+          fastscancount::fastscancount_avx512(range_size_avx512, data_ptrs, range_ptrs, answer, threshold);
+        },
+        "AVX512-based scancount", unified, elapsed_avx512, answer, sum, expected, last);
 #endif
   }
   std::cout << "Elems per millisecond:" << std::endl;
