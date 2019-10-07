@@ -124,7 +124,6 @@ void fastscancount_avx2(const std::vector<const std::vector<uint32_t>*> &data,
     }
 
     populate_hits_avx(counters, cache_size, threshold, start, out);
-    //add_populate_hits_avx512(counters, cache_size, threshold, start, out);
   }
 }
 
