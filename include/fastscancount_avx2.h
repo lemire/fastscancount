@@ -78,35 +78,6 @@ void update_counters_final(const uint32_t *&it_, const uint32_t *end,
   }
   it_ = end;
 }
-void add_populate_hits_avx512(std::vector<uint8_t> &counters, size_t range,
-                       size_t threshold, size_t start,
-                       std::vector<uint32_t> &out) {
-  uint8_t *array = counters.data();
-
-  size_t vsize = range / 64;
-  __m512i *varray = (__m512i *)array;
-  const __m512i comprand = _mm512_set1_epi8(threshold);
-
-  for (size_t i = 0; i < vsize; i++) {
-    size_t start_add = start + i*64;
-    __m512i v = _mm512_loadu_si512(varray + i);
-    uint64_t bits = _mm512_cmpgt_epi8_mask(v, comprand);
-    while (bits) {
-      unsigned zqty = __builtin_ctzll(bits);
-      bits >>= zqty; 
-      bits >>= 1; // If zqty = 63, shift by 64 is not defined, need to split shifts
-      out.push_back(start_add + zqty);
-      start_add += zqty + 1;
-    }
-  }
-
-  for (size_t i = vsize * 64; i < range; i++) {
-    auto v = array[i];
-    if (v > threshold)
-      out.push_back(start + i);
-  }
-
-}
 } // namespace
 
 void fastscancount_avx2(const std::vector<const std::vector<uint32_t>*> &data,
